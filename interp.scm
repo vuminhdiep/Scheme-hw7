@@ -287,7 +287,7 @@
   (lambda (ev)
     (cases expval ev
       [ref-val (ref) ref]
-      [else (raise-exception 'expval->list "Expressed value is not a ref: ~s" ev)])))
+      [else (raise-exception 'expval->ref "Expressed value is not a ref: ~s" ev)])))
 
 (define expval->list
   (lambda (ev)
@@ -545,6 +545,7 @@
 	 [(equal? code "!env")
 	  (display (env->string env))
 	  (newline)]
+   [(equal? code "!store") (display the-store!) (newline)]
 	 [(equal? code "!reset-env")
 	  (set! env (make-init-env))]
 	 [else
