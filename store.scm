@@ -123,7 +123,7 @@
   (lambda (ev1 ev2)
     (let [[ref (expval->ref ev1)]]
       (vector-set! the-store! ref (expval-cell ev2 #f))
-      (unit-val)      ;;@check invalid address access
+      (unit-val)      ;;@check invalid address access, setref! on a free-cell
     )
   )
 )
