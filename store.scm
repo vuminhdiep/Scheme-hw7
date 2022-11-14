@@ -1,6 +1,5 @@
 ;; store.scm
 
-;;@complexity of vector-ref?
 ;;@Ask MATT what is the best design practice for the store datastructure
 
 (define the-store! 'uninitialized)
@@ -141,6 +140,7 @@
           (cases expval val 
             (ref-val [r] (dfs-from r))
             (proc-val [params body saved-env] (mark saved-env))
+            (list-val [ls] (mark-for-list ls))
             [else (void)]
           )]
         )
@@ -171,7 +171,20 @@
     )
   )
 )
-
+(define mark-for-list
+  (lambda [ls] 
+    (if (null? ls)
+      (void)
+      [let ((top (car ls)))
+        (cases expval top
+          [ref-val (ref) (dfs-from ref)]
+          [else (void)]
+        )
+        (mark-for-list (cdr ls))
+      ]
+    )
+  )
+)
 (define mark 
   (lambda [source-env] 
     (cases environ source-env 
@@ -197,5 +210,3 @@
     (unit-val)
   )
 )
-;;what is right way to handle extend-env-rec
-;;What can be stored globally, everything but letrec?. Whatever things that cause effects onto the store?
