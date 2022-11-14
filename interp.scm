@@ -204,7 +204,7 @@
       [empty-env () (raise-exception 'apply-env "No binding for ~s" target-var)]
       [extend-env-rec [p-name p-params p-body saved-env]
         (if (equal? p-name target-var)
-          (newref! (proc-val p-params p-body
+          (newref! (proc-val p-params p-body ;;@why is there a newref! here, why can't we return the proc-val immediately
             (extend-env-rec p-name p-params p-body saved-env)))
           (apply-env saved-env target-var))]
       )))
@@ -227,8 +227,8 @@
 		       (env->string* env*) "]")]
       [extend-env-rec (p-name p-params p-body saved-env)
                       (string-append "[" (symbol->string p-name) 
-                                     "(" (symbol->string p-params) ")" 
-                                     (env->string* env*) "]")])))
+                                     "(" (fold-left string-append "" (map symbol->string p-params)) ")" 
+                                     (env->string* saved-env) "]")])))
 
 (define env->string*
   (lambda (env)
@@ -239,8 +239,8 @@
           " = " (expval->string (deref val)) 
           (env->string* env*))]
       [extend-env-rec (p-name p-params p-body saved-env)
-        (string-append ", " (symbol->string p-name) "(" (symbol->string p-params) ")"
-          (env->string* env*))])))
+        (string-append ", " (symbol->string p-name) "(" (fold-left string-append "" (map symbol->string p-params)) ")"
+          (env->string* saved-env))])))
 
 ;; ==================== Expressed Values ==================================
 
@@ -495,7 +495,7 @@
       ;;   			     (reverse (map (lambda (param val) (cons param val)) params vals)))))]
       ;;   	   [else (raise-exception 'value-of-exp 
       ;;   				  "Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)]))]
-      [letrec-exp (p-name p-vars p-body body)                                                         
+      [letrec-exp (p-name p-vars p-body body) 
 		  (value-of-exp body (extend-env-rec p-name p-vars p-body env))]     
       
       [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]
@@ -545,9 +545,14 @@
 	 [(equal? code "!env")
 	  (display (env->string env))
 	  (newline)]
-   [(equal? code "!store") (display the-store!) (newline)]
+   [(equal? code "!env raw") (display env) (newline)]
+   [(equal? code "!store") (display the-store!) (newline)] ;;@for quick debugging purpose
+   [(equal? code "!store-size") (display store-size!) (newline)]
 	 [(equal? code "!reset-env")
 	  (set! env (make-init-env))]
+   [(equal? code "!reset-store") (initialize-store!) (make-init-env)] ;;also needs to reset all refs
+   [(equal? code "!force-gc") (garbage-collector env)]
+
 	 [else
 	  ;; Parse code, eval expression, and print result.
 	  (guard  ;; Catches parse exceptions from sllgen
@@ -573,7 +578,6 @@
 		(newline)
 		))))])
 	(read-eval-print env)]))))
-
 
 
 

@@ -5,7 +5,14 @@
 
 (define the-store! 'uninitialized)
 (define store-size! 'uninitialized)   
+(define head-free! 'uninitialized)
+(define tail-free! 'uninitialized)
 (define STORE-MAXSIZE 2)
+
+(define-datatype store-cell store-cell?
+  (expval-cell (val expval?) (mark-bit boolean?)) ;;@unsure: constructor-type will have to reinit since immutable, vector-size-2 will lose semantics
+  (free-cell  (next-ref integer?))
+)
 
 (define copy-vector! 
   (lambda (small-v big-v idx)
@@ -22,7 +29,7 @@
 
 (define double-store! 
   (lambda ()  
-    (let [(new-store (make-vector (* 2 (vector-length the-store!))))]
+    (let [(new-store (make-vector (* 2 (vector-length the-store!)) (free-cell -1)))]
       (copy-vector! the-store! new-store 0)
       (set! the-store! new-store)
     )
@@ -34,11 +41,11 @@
 
 ;vector empty-store
 
-(define empty-store (lambda () (make-vector STORE-MAXSIZE)))
+(define empty-store (lambda () (make-vector STORE-MAXSIZE (free-cell -1))))
 
 ;; (initialize-store!) initializes the-store! to (empty-store).
 (define initialize-store!
-  (lambda () (set! the-store! (empty-store)) (set! store-size! 0) ))
+  (lambda () (set! the-store! (empty-store)) (set! store-size! 0) (set! head-free! 0) (set! tail-free! 0)))
 
 ;; (newref! ev) takes an expval ev adds to the-store! and returns
 ;; a ref-val that points to the added value.
@@ -54,9 +61,25 @@
       (if (>= store-size! (vector-length the-store!))
         (double-store!)
       )
-      (vector-set! the-store! store-size! val)
-      (set! store-size! (+ store-size! 1))
-      (ref-val (- store-size! 1))  ;; @ does this return, "expose" the reference to global, or just value, just return store-size!
+      (let [(cell (vector-ref the-store! head-free!)) (head* head-free!)]
+        (vector-set! the-store! head-free! (expval-cell val #f))
+        (if (>= head-free! store-size!) (set! store-size! (+ 1 store-size!)))
+
+        (cases store-cell cell
+          [free-cell (ref) 
+            (if (= -1 ref) 
+              [begin (assert (= head-free! tail-free!)) (set! head-free! store-size!) (set! tail-free! head-free!)]
+              (set! head-free! ref)
+            )
+          ]
+          [else (raise-exception 'newref! "Must be impossible to reach here. Implementation error elsewhere")]
+        )
+
+        (if (>= store-size! (vector-length the-store!))
+          (double-store!)   ;;@tail assumes that that position must be in existence
+        )
+        (ref-val head*)
+      )
     )
   )
 )
@@ -71,8 +94,14 @@
 ;vector deref
 (define deref
   (lambda (ev)
-    (vector-ref the-store! (expval->ref ev))  
-))
+    (let [(cell (vector-ref the-store! (expval->ref ev)))]
+      (cases store-cell cell
+        [expval-cell [val bit] val]
+        [else (raise-exception 'deref "invalid address" 1)] ;;@should it be invalid address
+      )
+    )
+  )  
+)
 
 ;; (setref! ev1 ev2) takes two expvals, the first which should be a
 ;; (ref-val ref) it sets the cell ref in the-store! to ev2.  Returns (unit-val).
@@ -93,9 +122,80 @@
 (define setref!
   (lambda (ev1 ev2)
     (let [[ref (expval->ref ev1)]]
-      (vector-set! the-store! ref ev2)
-      (unit-val)
+      (vector-set! the-store! ref (expval-cell ev2 #f))
+      (unit-val)      ;;@check invalid address access
     )
   )
 )
-  
+
+(define dfs-from 
+  (lambda [cell-idx]  
+    (let [(cell (vector-ref the-store! cell-idx))] 
+      (cases store-cell cell
+      [expval-cell (val mark-bit) 
+        (if (not mark-bit)
+          [begin 
+          ; (display "marking") (display " ") (display cell-idx) (newline)
+          (set! mark-bit #t)
+          (vector-set! the-store! cell-idx (expval-cell val mark-bit))
+          (cases expval val 
+            (ref-val [r] (dfs-from r))
+            (proc-val [params body saved-env] (mark saved-env))
+            [else (void)]
+          )]
+        )
+      ]
+      [free-cell [next-ref] (void)]
+      [else (void)]
+      )
+    )
+  )
+)
+
+(define sweep 
+  (lambda [idx]
+    (if (>= idx store-size!) 
+      (void)
+      (let [(cell (vector-ref the-store! idx))]
+        [cases store-cell cell
+          (expval-cell (val mark-bit) 
+            (if mark-bit 
+              (begin (vector-set! the-store! idx (expval-cell val #f)) (sweep (+ 1 idx)) )
+              (begin (vector-set! the-store! tail-free! (free-cell idx)) (vector-set! the-store! idx (free-cell -1))
+               (set! tail-free! idx) (sweep (+ 1 idx)))
+            )
+          )
+          (else (sweep (+ 1 idx)))
+        ]
+      )
+    )
+  )
+)
+
+(define mark 
+  (lambda [source-env] 
+    (cases environ source-env 
+      [empty-env () (void)]
+      [extend-env (var val env*) 
+        (cases expval val 
+          [ref-val (ref) (dfs-from ref)]
+          [else (raise-exception 'mark "invalid values in environment" 1)]
+        )
+        (mark env*)
+      ]
+      [extend-env-rec (name params body saved-env)
+        (mark saved-env)
+      ]
+    )
+  )
+)
+
+(define garbage-collector
+  (lambda [source-env] 
+    (mark source-env)
+    (sweep 0)
+    (unit-val)
+  )
+)
+;;what is right way to handle extend-env-rec
+;;What can be stored globally, everything but letrec?. Whatever things that cause effects onto the store?
