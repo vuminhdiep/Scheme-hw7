@@ -21,7 +21,7 @@ Also the-store! will double the size once it reaches the max capacity, and we al
 
 When doing depth first search in the-store!, we need to consider different cases whether the element in the-store! is a proc-val, ref-val or list-val to handle them.
 
-The garbage collector is called in the REP loop statically, so whenever we want to invoke garbage collector we use command !force-gc
+The garbage collector is called in the REP loop statically, so whenever we want to invoke garbage collector we use command !force-gc and at the end of REP loop the garbage collector is called
 
 3.The function of individual functions as parts of the solution.
 
@@ -33,6 +33,7 @@ In store.scm:
 (define mark): calling dfs-from to search in the-store! and mark reachable objects or not
 (define mark-for-list): calling dfs-from to mark elements in the list if a reachable object in the-store! is a list of ref-vals
 (define sweep): putting all the free-cells that are not marked to a linkedlist with head-free! and tail-free!
+(define garbage-collector): run the garbage collector with mark-sweep starting from index 0 in env
 
 In interp.scm:
 !env raw: printing everything from the environment for debugging
@@ -91,28 +92,39 @@ def! p2 = newref!(1)
 setref!(p1, newref!(deref(p2)))
 setref!(p2, newref!(deref(p1)))
 
-#Test 8: unreachable cycle
-def! p1 
+#Test 7: 
+def! x = cons(deref(newref!(0)), emptylist)
 
-#Test 9: Can allocate twice
+#Test 8: 
+def! x = cons(deref(newref!(0)), cons(deref(newref!(1)), cons(deref(newref!(2)), emptylist)))
 
-#Test 10: root is not recycled
+#Test 9: test_reachable_objects_not_collected
+def! p1 = newref!(0)
+def! p2 = newref!(deref(p1))
+def! p3 = newref!(deref(p2))
 
-#Test 11: test_reachable_objects_not_collected
-
-#Test 12:
+#Test 10:
 def! x = cons(10, cons(12, emptylist))
 
-#Test 13: Test with list
+#Test 11:
+def! g = let x = newref!(22) in let f = proc(z) let zz = newref!(-(z,deref(x))) in deref(zz) in -((f 66), (f 55))
+
+#Test 12: Test with list
 def! x = (emptylist)
 
-#Test 14: test_root_cycle
+#Test 13: test_root_cycle
 
-#Test 15: test_nearly_full_heap
-
-#Test 16: test_full_heap and every object is reachable
-
-#Test 17:
+#Test 14:
 def! p1 = newref!(0)
 def! p2 = newref!(1)
 def! x = cons(10, cons(deref(p1), deref(p2)))
+
+#Test 15: letrec
+def! g = letrec double(x) = if zero?(x) then 0 else -((double -(x,1)), -2) in (double 6)
+
+#Test 16: proc
+def! y = let x = 300 in let f = proc(z) -(z,x) in let x = 100 in let g = proc(z) -(z,x) in -((f 1), (g 1))
+
+#Test 17:
+def! g = let x = 37 in proc(y) let z = -(y,x) in -(x,y)
+(g 2)
