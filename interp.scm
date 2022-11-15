@@ -575,7 +575,7 @@
 		(display (expval->string val))
 		(set! env new-env)  
 		(newline)
-    (garbage-collector env)
+    (garbage-collector env) ;;static garbage collector
 		))))])
 	(read-eval-print env)]))))
 
