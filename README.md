@@ -27,23 +27,23 @@ The garbage collector is called in the REP loop statically, so whenever we want 
 
 In store.scm:
 
-(define-datatype store-cell store-cell?): create new data structure for the-store! to keep track of reachable objects and free-cells
-(define copy-vector!): for copying the old store to another one
-(define double-store!): double the size of the store when reaching max capacity by copying all elements to another store with double capacity
-(define dfs-from): helper function to do depth first search on the-store! within each ref-val in the environment 
-(define mark): calling dfs-from to search in the-store! and mark reachable objects or not
-(define mark-for-list): calling dfs-from to mark elements in the list if a reachable object in the-store! is a list of ref-vals
-(define sweep): putting all the free-cells that are not marked to a linkedlist with head-free! and tail-free!
-(define garbage-collector): run the garbage collector with mark-sweep starting from index 0 in env
+- (define-datatype store-cell store-cell?): create new data structure for the-store! to keep track of reachable objects and free-cells
+- (define copy-vector!): for copying the old store to another one
+- (define double-store!): double the size of the store when reaching max capacity by copying all elements to another store with double capacity
+- (define dfs-from): helper function to do depth first search on the-store! within each ref-val in the environment 
+- (define mark): calling dfs-from to search in the-store! and mark reachable objects or not
+- (define mark-for-list): calling dfs-from to mark elements in the list if a reachable object in the-store! is a list of ref-vals
+- (define sweep): putting all the free-cells that are not marked to a linkedlist with head-free! and tail-free!
+- (define garbage-collector): run the garbage collector with mark-sweep starting from index 0 in env
 
 In interp.scm:
 
-!env raw: printing everything from the environment for debugging
-!store: pringting everything from the-store! for debugging
-!store-size: printing the size of thestore!
-!reset-env: reset the environment to init-env
-!reset-store: reset the-store! to empty on the init-env environment
-!force-gc: invoke the garbage collector to run
+- !env raw: printing everything from the environment for debugging
+- !store: pringting everything from the-store! for debugging
+- !store-size: printing the size of thestore!
+- !reset-env: reset the environment to init-env
+- !reset-store: reset the-store! to empty on the init-env environment
+- !force-gc: invoke the garbage collector to run
 
 
 4.Trade-offs that you may have made in performance, robustness, or complexity.
@@ -52,16 +52,16 @@ The complexity of the mark phase is O(L), where L is the size of the reachable o
 
 Pros:
 
-Mark-sweep algorithm is the basic, most common algorithm for garbage collector. 
-There are no additional overheads incurred during the execution of algorithm.
-The algorithm handles cyclic references well and never results in an infinite loop.
-The Mark-Sweep algorithm doesn't create drag on every single memory operation like Reference Counting.
+- Mark-sweep algorithm is the basic, most common algorithm for garbage collector. 
+- There are no additional overheads incurred during the execution of algorithm.
+- The algorithm handles cyclic references well and never results in an infinite loop.
+- The Mark-Sweep algorithm doesn't create drag on every single memory operation like Reference Counting.
 
 Cons:
 
-However, there can be a cost of resetting the mark-bit of reachable objects after done sweeping. 
-Every location in memory must be examined during the sweep stage of this algorithm - this can be time-consuming.
-Can leave several gaps in used memory when objects are swept out. This is fragmentation has a negative impact on the overall throughput as it makes object allocation more difficult and garbage collections more frequent. 
+- However, there can be a cost of resetting the mark-bit of reachable objects after done sweeping. 
+- Every location in memory must be examined during the sweep stage of this algorithm - this can be time-consuming.
+- Can leave several gaps in used memory when objects are swept out. This is fragmentation has a negative impact on the overall throughput as it makes object allocation more difficult and garbage collections more frequent. 
 
 5.Alternatives you tried before arriving at your current solution.
 
