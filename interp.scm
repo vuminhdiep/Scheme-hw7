@@ -476,7 +476,6 @@
                 'value-of-exp
                 "Attempted to call non-procedure: ~s" rator)]))]
 
-
       
       ;; [call-exp (exp exps)
       ;;   	(let*
@@ -496,7 +495,7 @@
       ;;   	   [else (raise-exception 'value-of-exp 
       ;;   				  "Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)]))]
       [letrec-exp (p-name p-vars p-body body) 
-		  (value-of-exp (body) (extend-env-rec p-name p-vars p-body env))]     
+		    (value-of-exp body (extend-env-rec p-name p-vars p-body env))]     
       
       [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]
       [newline-exp ()  (newline) (unit-val)]
@@ -576,6 +575,7 @@
 		(display (expval->string val))
 		(set! env new-env)  
 		(newline)
+    (garbage-collector env)
 		))))])
 	(read-eval-print env)]))))
 

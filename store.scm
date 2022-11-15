@@ -131,22 +131,22 @@
   (lambda [cell-idx]  
     (let [(cell (vector-ref the-store! cell-idx))] 
       (cases store-cell cell
-      [expval-cell (val mark-bit) 
-        (if (not mark-bit)
-          [begin 
-          ; (display "marking") (display " ") (display cell-idx) (newline)
-          (set! mark-bit #t)
-          (vector-set! the-store! cell-idx (expval-cell val mark-bit))
-          (cases expval val 
-            (ref-val [r] (dfs-from r))
-            (proc-val [params body saved-env] (mark saved-env))
-            (list-val [ls] (mark-for-list ls))
-            [else (void)]
-          )]
-        )
-      ]
-      [free-cell [next-ref] (void)]
-      [else (void)]
+        [expval-cell (val mark-bit) 
+          (if (not mark-bit)
+            [begin 
+            ; (display "marking") (display " ") (display cell-idx) (newline)
+            (set! mark-bit #t)
+            (vector-set! the-store! cell-idx (expval-cell val mark-bit))
+            (cases expval val 
+              (ref-val [r] (dfs-from r))
+              (proc-val [params body saved-env] (mark saved-env))
+              (list-val [ls] (mark-for-list ls))
+              [else (void)]
+            )]
+          )
+        ]
+        [free-cell [next-ref] (void)]
+        [else (void)]
       )
     )
   )
@@ -207,6 +207,5 @@
   (lambda [source-env] 
     (mark source-env)
     (sweep 0)
-    (unit-val)
   )
 )
