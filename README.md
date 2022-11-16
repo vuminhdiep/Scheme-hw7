@@ -42,6 +42,8 @@ In interp.scm:
 !reset-store: reset the-store! to empty on the init-env environment
 !force-gc: invoke the garbage collector to run
 
+Note: to keep it easy to debug, we decided to print out all the contents of the store! raw, including the (free-cell -1) that hasn't been allocated yet. The store will have an initial size of 2, so we can test the double-size mechanism more often. 
+
 
 4.Trade-offs that you may have made in performance, robustness, or complexity.
 The complexity of the mark phase is O(L), where L is the size of the reachable objects in the heap; the complexity of the sweep phase is O(H) where H is the size of the heap. In this case H > L.
@@ -58,7 +60,7 @@ Every location in memory must be examined during the sweep stage of this algorit
 Can leave several gaps in used memory when objects are swept out. This is fragmentation has a negative impact on the overall throughput as it makes object allocation more difficult and garbage collections more frequent. 
 
 5.Alternatives you tried before arriving at your current solution.
-We tried to look at other algorithms like Reference counting, escape analysis to decide on which algorithm to choose. We read the Garbage Collector Handbook, by Anthony Hosking, Eliot Moss, Richard Jones besides the paper in the homework description to see which algorithm is the most possible to implement. The reason why we chose mark-sweep was because tracing garbage collector was supposedly the easiest, most common method to implement given a short timeframe with a lot of ambuigity. For Reference counting, you have to break the cycle by hand and collect the cyclic garbage, free space is never compacted and the reference counts need to be adjusted on most pointer write operation so it makes more sense to do depth first search in mark-sweep. And for escape analysis, there were fewer resources and documentations than mark-sweep, thus you have to change the scope of env and it would be harder to successfully implement within 2 weeks.
+We tried to look at other algorithms like Reference counting, escape analysis to decide on which algorithm to choose. We read the Garbage Collector Handbook, by Anthony Hosking, Eliot Moss, Richard Jones besides the paper in the homework description to see which algorithm is the most possible to implement. The reason why we chose mark-sweep was because tracing garbage collector was supposedly the easiest, most common method to implement given a short timeframe with a lot of ambuigity. For Reference counting, you have to break the cycle by hand and collect the cyclic garbage, free space is never compacted and the reference counts need to be adjusted on most pointer write operation so it makes more sense to do depth first search in mark-sweep. And for escape analysis, there were fewer resources and ocumentations than mark-sweep. In addition, you would have to change the entire structure of the code since it requires interference in every newref!, deref and based on the surrouding context infer the life cycle of that object. This cannot be simply done in 2 weeks. 
 
 6.If applicable, a description of which group members were responsible for which part of the work.
 We did everything together
