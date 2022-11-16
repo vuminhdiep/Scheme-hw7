@@ -120,7 +120,8 @@ def! g = let x = newref!(22) in let f = proc(z) let zz = newref!(-(z,deref(x))) 
 ;;Test 12: Test with list
 def! x = (emptylist)
 
-;;Test 13: test_root_cycle
+;;Test 13: 
+def! x = cdr(cons(deref(newref!(0)), cons(deref(newref!(1)), cons(2, emptylist))))
 
 ;;Test 14:
 def! p1 = newref!(0)
@@ -143,5 +144,3 @@ def! x = car(cons(emptylist, 10))
 ;;Test 19:
 def! x = cdr(cons(emptylist, cons(10, cons(3, emptylist))))
 
-;;Test 20:
-def! x = cdr(cons(deref(newref!(0)), cons(deref(newref!(1)), cons(2, emptylist))))
