@@ -66,6 +66,7 @@ Cons:
 - Can leave several gaps in used memory when objects are swept out. This is fragmentation has a negative impact on the overall throughput as it makes object allocation more difficult and garbage collections more frequent. 
 
 5.Alternatives you tried before arriving at your current solution.
+
 We tried to look at other algorithms like Reference counting, escape analysis to decide on which algorithm to choose. We read the Garbage Collector Handbook, by Anthony Hosking, Eliot Moss, Richard Jones besides the paper in the homework description to see which algorithm is the most possible to implement. The reason why we chose mark-sweep was because tracing garbage collector was supposedly the easiest, most common method to implement given a short timeframe with a lot of ambuigity. For Reference counting, you have to break the cycle by hand and collect the cyclic garbage, free space is never compacted and the reference counts need to be adjusted on most pointer write operation so it makes more sense to do depth first search in mark-sweep. And for escape analysis, there were fewer resources and ocumentations than mark-sweep. In addition, you would have to change the entire structure of the code since it requires interference in every newref!, deref and based on the surrouding context infer the life cycle of that object. This cannot be simply done in 2 weeks. 
 
 6.If applicable, a description of which group members were responsible for which part of the work.
