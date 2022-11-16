@@ -15,7 +15,7 @@ We are doing static mark-sweep so like it's called in the REP loop at start inst
 
 For the-store! (the heap), we use Scheme vector to implement and the-store! has a store-cell that contains an expval-cell (the cell with value as expval type) and a boolean mark-bit (true if the object is reachable from root, otherwise false - a.k.a free-cell). The free-cell also contains a pointer to the next one and all the free-cells are kept in a linkedlist-like structure. In a linkedlist of free-cells, we have pointer head-free! and tail-free! to indicate the start and end of the linkedlist. (free-cell -1) to initialize that it's pointing to null
 
-The environment (env) keep tracks of all local variables ref-val and we use each of the ref-val in env to mark in the-store! whether they are reachable or not by doing depth first search. After marking all the reachable objects, the garbage collector did the sweeping by assigning head-free! and tail-free! pointers to all the free-cells.
+The environment (env) keep tracks of all local/global variables ref-val and we use each of the ref-val in env to mark in the-store! whether they are reachable or not by doing depth first search. After marking all the reachable objects, the garbage collector did the sweeping by assigning head-free! and tail-free! pointers to all the free-cells.
 
 Also the-store! will double the size once it reaches the max capacity, and we also keep track of how many elements currently in the-store! to determine when to double the size and copy.
 
